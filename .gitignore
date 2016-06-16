@@ -1,0 +1,6 @@
+include/license.h
+include/*.str
+AcaTTS.dll
+AcaTTS.64.dll
+AcaTTS.ini
+build/
