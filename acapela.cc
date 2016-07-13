@@ -95,7 +95,14 @@ namespace acapela {
 					printf("BabTTS_GetVoiceInfo error: %d\n", babError);
 				}
 				else {
-					result->Set(j, String::NewFromUtf8(isolate, voiceInfo.szName)); // String::Utf8Value("asdf"));
+					Local<Object> obj = Object::New(isolate);
+					obj->Set(String::NewFromUtf8(isolate, "voice_id"), String::NewFromUtf8(isolate, voiceInfo.szName));
+					obj->Set(String::NewFromUtf8(isolate, "name"), String::NewFromUtf8(isolate, voiceInfo.szSpeaker));
+					obj->Set(String::NewFromUtf8(isolate, "locale"), String::NewFromUtf8(isolate, "en-US"));
+					obj->Set(String::NewFromUtf8(isolate, "language"), String::NewFromUtf8(isolate, voiceInfo.szLanguage));
+					obj->Set(String::NewFromUtf8(isolate, "active"), Boolean::New(isolate, true));
+
+					result->Set(j, obj); // String::Utf8Value("asdf"));
 					printf("Voice: %s Speaker: %s Language: %s Version: %s\n", voiceInfo.szName, voiceInfo.szSpeaker, voiceInfo.szLanguage, voiceInfo.szVersion);
 				}
 			}

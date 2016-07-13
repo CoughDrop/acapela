@@ -186,16 +186,18 @@
             var new_list = [];
             tts.voice_id_map = {};
             for (var idx = 0; idx < raw_list.length; idx++) {
-                var voice_id = 'acap:' + raw_list[idx].split(/[^A-Za-z-]/)[0];
-                tts.voice_id_map[voice_id] = raw_list[idx];
-                new_list.push(voice_id);
+                var voice = raw_list[idx];
+                voice.raw_voice_id = voice.voice_id;
+                voice.voice_id = 'acap:' + voice.raw_voice_id.split(/[^A-Za-z-]/)[0];
+                tts.voice_id_map[voice.voice_id] = voice.raw_voice_id;
+                new_list.push(voice);
             }
             if (opts.success) {
                 opts.success(new_list);
             }
         };
         tts.downloadVoice = function (opts) {
-            downloader.watch(opts.progress);
+            downloader.watch(opts.progress || opts.success);
             downloader.download_voice(opts || {});
         }
         tts.deleteVoice = function (opts) {
