@@ -8,8 +8,8 @@
     "url": "git+https://github.com/coughdrop/acapela.git"
   },
   "scripts": {
-    "o-install": "echo 'ok'",
-    "install": "node-gyp rebuild"
+    "install": "echo 'ok'",
+    "o-install": "node-gyp rebuild"
   },
   "dependencies": {
     "extract-zip": "latest",
