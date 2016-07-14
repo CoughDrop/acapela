@@ -46,13 +46,19 @@
                 request({
                     uri: url
                 }, function (err, res, body) {
+                  if(err) {
+                    console.log("error downloading " + url);
+                    console.log(err);
+                  } else {
+                    console.log("got a response");
+                  }
                 }).on('data', function (data) {
                     size = size + data.length;
                     downloader.watcher({
                         percent: percent_pre + Math.min(1.0, size / expected_size) * percent_amount,
                         done: false
                     })
-                }).pipe(fs.createWriteStream('download.zip')).on('close', done);                  
+                }).pipe(fs.createWriteStream(downloader.tmp_file)).on('close', done);                  
             },
             assert_directory: function(dir, done) {
                 fs.stat(dir, function(err, stats) {
@@ -68,7 +74,7 @@
             unzip_file: function(language_dir, n_entries, percent_pre, percent_amount, done) {
                 var entries = 0;
                 downloader.assert_directory('./data/' + language_dir, function() {
-                    extract('download.zip', {
+                    extract(downloader.tmp_file, {
                         dir: './data/' + language_dir, onEntry: function () {
                             entries++;
                             downloader.watcher({
@@ -77,7 +83,7 @@
                             });
                         }
                     }, function (err) {
-                        fs.unlink('download.zip');
+                        fs.unlink(downloader.tmp_file);
                         done();
                     });
                 });
@@ -85,9 +91,10 @@
             download_voice: function (opts) {
                 var dir_id = opts.voice_id.replace(/^acap:/, '');
                 var language_dir = opts.language_dir;
+                downloader.tmp_file = 'tmp_download' + Math.round(Math.random() * 99999) + '.zip';
                 downloader.watcher = downloader.watcher || function() { };
                 
-                fs.unlink('download.zip', function () {
+                fs.unlink(downloader.tmp_file, function () {
                     var download_language = function () {
                         downloader.download_file(opts.language_url, (5 * 1024 * 1024), 0, 0.10, unzip_language);
                     };
