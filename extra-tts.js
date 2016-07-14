@@ -1,10 +1,9 @@
 (function () {
-    var req = (window.requireNode || window.require);
-    var acapela = req('./node_modules/acapela');
-    var extract = req('./node_modules/extract-zip');
-    var request = req('./node_modules/request');
-    var rimraf = req('./node_modules/rimraf');
-    var fs = req('fs');
+    var acapela = require('acapela');
+    var extract = require('extract-zip');
+    var request = require('request');
+    var rimraf = require('rimraf');
+    var fs = require('fs');
 
     var tts = {
         exec: function () {
