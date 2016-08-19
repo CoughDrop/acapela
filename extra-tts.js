@@ -4,6 +4,7 @@
     var request = require('request');
     var rimraf = require('rimraf');
     var fs = require('fs');
+    const ipcRenderer = req('electron').ipcRenderer;
 
     var tts = {
         exec: function () {
@@ -41,24 +42,47 @@
             }
         };
         var downloader = {
-            download_file: function(url, expected_size, percent_pre, percent_amount, done) {
+            download_file_to_location(url, file_path, progress) {
                 var size = 0;
-                request({
-                    uri: url
-                }, function (err, res, body) {
-                  if(err) {
-                    console.log("error downloading " + url);
-                    console.log(err);
+                if(downloader.ipc && ipcRenderer) {
+                  downloader.download_file_to_location.callback = progress;
+                  ipcRenderer.send('extra-tts-download-file', JSON.stringify({
+                    url: url,
+                    path: file_path
+                  });
+                } else {
+                  request({
+                      uri: url
+                  }, function (err, res, body) {
+                    if(err) {
+                      console.log("error downloading " + url);
+                      console.log(err);
+                      progress(null, null, "error downloading " + url);
+                    } else {
+                      console.log("got a response");
+                      progress(null, null, "got a response");
+                    }
+                  }).on('data', function (data) {
+                      size = size + data.length;
+                      progress(size, false, null);
+                  }).pipe(fs.createWriteStream(file_path)).on('close', function() {
+                      progress(0, true, null);
+                  });                  
+                }
+            },
+            download_file: function(url, expected_size, percent_pre, percent_amount, done) {
+                downloader.download_file_to_location(url, downloader.tmp_file, function(size, complete, error) {
+                  if(error) {
+                    console.log(error);
+                  } else if(complete) {
+                    done();
                   } else {
-                    console.log("got a response");
-                  }
-                }).on('data', function (data) {
-                    size = size + data.length;
                     downloader.watcher({
-                        percent: percent_pre + Math.min(1.0, size / expected_size) * percent_amount,
-                        done: false
-                    })
-                }).pipe(fs.createWriteStream(downloader.tmp_file)).on('close', done);                  
+                      percent: percent_pre + Math.min(1.0, size / expected_size) * percent_amount,
+                      done: false
+                    });
+                  }
+                });
             },
             assert_directory: function(dir, done) {
                 fs.stat(dir, function(err, stats) {
@@ -71,21 +95,40 @@
                     }
                 });
             },
-            unzip_file: function(language_dir, n_entries, percent_pre, percent_amount, done) {
+            unzip_file_to_location: function(file_path, dir, progress) {
                 var entries = 0;
-                downloader.assert_directory('./data/' + language_dir, function() {
-                    extract(downloader.tmp_file, {
-                        dir: './data/' + language_dir, onEntry: function () {
-                            entries++;
-                            downloader.watcher({
-                                percent: percent_pre + (Math.min(1.0, (entries / n_entries)) * percent_amount),
-                                done: false
-                            });
-                        }
-                    }, function (err) {
-                        fs.unlink(downloader.tmp_file);
-                        done();
+                if(downloader.ipc && ipcRenderer) {
+                  downloader.unzip_file_to_location.callback = progress;
+                  ipcRenderer.send('extra-tts-unzip-file', JSON.stringify({
+                    file: file_path,
+                    dir: dir
+                  });
+                } else {
+                  downloader.assert_directory('./data/' + language_dir, function() {
+                      extract(downloader.tmp_file, {
+                          dir: './data/' + language_dir, onEntry: function () {
+                              entries++;
+                              progress(entries, false, null);
+                          }
+                      }, function (err) {
+                          fs.unlink(downloader.tmp_file);
+                          progress(0, true, null);
+                      });
+                  });
+                }
+            },
+            unzip_file: function(language_dir, n_entries, percent_pre, percent_amount, done) {
+                downloader.unzip_file_to_location(downloader.tmp_file, './data/' + language_dir, function(entries, complete, error) {
+                  if(error) {
+                    console.log(error);
+                  } else if(complete) {
+                    done();
+                  } else {
+                    downloader.watcher({
+                      percent: percent_pre + (Math.min(1.0, (entries / n_entries)) * percent_amount),
+                      done: false
                     });
+                  }
                 });
             },
             download_voice: function (opts) {
@@ -205,10 +248,36 @@
         tts.downloadVoice = function (opts) {
             downloader.watch(opts.progress || opts.success);
             downloader.download_voice(opts || {});
-        }
+        };
         tts.deleteVoice = function (opts) {
             downloader.delete_voice(opts || {});
+        };
+        tts.download_file = function(url, file_path, progress) {
+            downloader.download_file_to_location(url, file_path, progress);
+        };
+        tts.unzip_file = function(file_path, dir_path, progress) {
+            downloader.unzip_file_to_location(file_path, dir_path, progress);
+        };
+    }
+    
+    if(ipcRenderer && ipcRenderer.send) {
+      ipcRenderer.send('extra-tts-ready');
+    
+      ipcRenderer.on('extra-tts-ready', function(event, message) {
+        if(message == 'ready') {
+          downloader.ipc = true;
         }
+      });
+    
+      ipcRenderer.on('extra-tts-download-file-progress', function(event, message) {
+        var opts = JSON.parse(message);
+        downloader.download_file_to_location.callback(opts.percent, opts.done, opts.error);
+      });
+    
+      ipcRenderer.on('extra-tts-upzip-file-progress', function(event, message) {
+        var opts = JSON.parse(message);
+        downloader.unzip_file_to_location.callback(opts.percent, opts.done, opts.error);
+      });
     }
 
     module.exports = tts;

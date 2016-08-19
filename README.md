@@ -41,6 +41,42 @@ extra_tts.speakText({
 extra_tts.stopSpeakingText();
 ```
 
+### Chrome Memory Issue
+
+Chrome apparently doesn't like downloading and unzipping really large files in a 
+browser process, it'll sometimes result in the entire window turning black. You
+can get around this in electron by adding some listeners on the main process:
+
+```
+ipcMain.on('extra-tts-download-file', function(event, str) {
+  var sender = event.sender;
+  var opts = JSON.parse(str);
+  extra_tts.download_file(opts.url, opts.path, function(percent, done, error) {
+    sender.send('extra-tts-download-file-progress', JSON.stringify({
+      size: size,
+      done: done,
+      error: error
+    });
+  });
+});
+
+ipcMain.on('extra-tts-unzip-file', function(event, str) {
+  var sender = event.sender;
+  var opts = JSON.parse(str);
+  extra_tts.unzip_file(opts.file, opts.dir, function(percent, done, error) {
+    sender.set('extra-tts-upzip-file-progress', JSON.stringify({
+      entries: entries,
+      done: done,
+      error: error
+    });
+  });
+});
+
+ipcMain.on('extra-tts-ready', function() {
+  event.sender.send('extra-tts-ready', 'ready');
+});
+```
+
 ## License
 MIT License
 
