@@ -44,32 +44,39 @@ extra_tts.stopSpeakingText();
 ### Chrome Memory Issue
 
 Chrome apparently doesn't like downloading and unzipping really large files in a 
-browser process, it'll sometimes result in the entire window turning black. You
-can get around this in electron by adding some listeners on the main process:
+browser process, and on older computers also seems to struggle with the acapela
+libraries, it'll sometimes result in the entire window turning black. You
+can get around this in electron by requiring `extra-tts.js` on the main process,
+and `extra-tts-ipc.js` on the rendering process. You'll also need a little extra
+code on the main process, something like:
 
 ```
-ipcMain.on('extra-tts-download-file', function(event, str) {
+ipcMain.on('extra-tts-exec', function(event, message) {
   var sender = event.sender;
   var opts = JSON.parse(str);
-  extra_tts.download_file(opts.url, opts.path, function(percent, done, error) {
-    sender.send('extra-tts-download-file-progress', JSON.stringify({
-      size: size,
-      done: done,
-      error: error
+  var args = opts.args;
+  opts[0].success = function(res) {
+    sender.send('extra-tts-exec-result', JSON.stringify({
+      success: true,
+      callback_id: opts.success_id,
+      result: res
     });
-  });
-});
-
-ipcMain.on('extra-tts-unzip-file', function(event, str) {
-  var sender = event.sender;
-  var opts = JSON.parse(str);
-  extra_tts.unzip_file(opts.file, opts.dir, function(percent, done, error) {
-    sender.set('extra-tts-upzip-file-progress', JSON.stringify({
-      entries: entries,
-      done: done,
-      error: error
+  };
+  opts[0].progress = function(res) {
+    sender.send('extra-tts-exec-result', JSON.stringify({
+      progress: true,
+      callback_id: opts.progress_id,
+      result: res
     });
-  });
+  };
+  opts[0].error = function(err) {
+    sender.send('extra-tts-exec-result', JSON.stringify({
+      error: true,
+      callback_id: opts.error_id,
+      result: err
+    });
+  };
+  extra_tts[opts.method].apply(extra_tts, args);
 });
 
 ipcMain.on('extra-tts-ready', function() {

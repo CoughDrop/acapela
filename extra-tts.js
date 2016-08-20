@@ -4,11 +4,9 @@
     var request = require('request');
     var rimraf = require('rimraf');
     var fs = require('fs');
-    const ipcRenderer = req('electron').ipcRenderer;
 
     var tts = {
         exec: function () {
-
         },
         enabled: false
     };
@@ -260,25 +258,5 @@
         };
     }
     
-    if(ipcRenderer && ipcRenderer.send) {
-      ipcRenderer.send('extra-tts-ready');
-    
-      ipcRenderer.on('extra-tts-ready', function(event, message) {
-        if(message == 'ready') {
-          downloader.ipc = true;
-        }
-      });
-    
-      ipcRenderer.on('extra-tts-download-file-progress', function(event, message) {
-        var opts = JSON.parse(message);
-        downloader.download_file_to_location.callback(opts.percent, opts.done, opts.error);
-      });
-    
-      ipcRenderer.on('extra-tts-upzip-file-progress', function(event, message) {
-        var opts = JSON.parse(message);
-        downloader.unzip_file_to_location.callback(opts.percent, opts.done, opts.error);
-      });
-    }
-
     module.exports = tts;
 })();
