@@ -54,6 +54,7 @@
               args: [a, b, c]
             });
           } else {
+            console.log("extra-tts will run in the current process");
             extra_tts = extra_tts || require('extra-tts');
             extra_tts[method].appl(extra_tts, rags)
           }
@@ -75,6 +76,7 @@
     
       ipcRenderer.on('extra-tts-ready', function(event, message) {
         if(message == 'ready') {
+          console.log("extra-tts will run in the main electron process");
           tts.ipc = true;
         }
       });
