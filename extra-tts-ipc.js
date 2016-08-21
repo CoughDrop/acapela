@@ -2,7 +2,7 @@
     var ipcRenderer = null;
     try {
       ipcRenderer = require('electron').ipcRenderer;
-    } catch() { }
+    } catch(e) { }
     var extra_tts = null;
     
     var tts = {
@@ -18,11 +18,12 @@
           tts.callbacks = new_callbacks;
         },
         add_callback: function(callback, type) {
-          clean_callbacks();
+          tts.clean_callbacks();
           var now = (new Date()).getTime();
-          var id = (Math.random() * 9999) + "_" + now;
+          var id = null;
           if(callback) {
-            tts.callbacks[id] = {
+              id = (Math.random() * 9999) + "-" + now;
+              tts.callbacks[id] = {
               timestamp: now,
               type: type,
               callback: callback,
@@ -31,7 +32,7 @@
           }
           return id;
         },
-        trigger_callback: function(object) {
+        trigger_callback: function (object) {
           if(object.callback_id && tts.callbacks[object.callback_id]) {
             tts.callbacks[object.callback_id].callback(object.result);
           }
@@ -52,13 +53,13 @@
               progress_id: progress_id,
               error_id: error_id,
               args: [a, b, c]
-            });
+            }));
           } else {
             console.log("extra-tts will run in the current process");
             extra_tts = extra_tts || require('extra-tts');
             extra_tts[method].appl(extra_tts, rags)
           }
-        }
+        },
         enabled: false
     };
     
@@ -81,7 +82,7 @@
         }
       });
       
-      ipcRenderer.on('extra-tts-exec-result', function(event, message) {
+      ipcRenderer.on('extra-tts-exec-result', function (event, message) {
         var json = JSON.parse(message);
         if(json.callback_id) {
           tts.trigger_callback(json);

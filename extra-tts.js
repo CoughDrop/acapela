@@ -1,10 +1,9 @@
 (function () {
-    var req = (window.requireNode || window.require);
-    var acapela = req('./node_modules/acapela');
-    var extract = req('./node_modules/extract-zip');
-    var request = req('./node_modules/request');
-    var rimraf = req('./node_modules/rimraf');
-    var fs = req('fs');
+    var acapela = require('acapela');
+    var extract = require('extract-zip');
+    var request = require('request');
+    var rimraf = require('rimraf');
+    var fs = require('fs');
 
     var tts = {
         exec: function () {
@@ -43,34 +42,26 @@
         var downloader = {
             download_file_to_location(url, file_path, progress) {
                 var size = 0;
-                if(downloader.ipc && ipcRenderer) {
-                  downloader.download_file_to_location.callback = progress;
-                  ipcRenderer.send('extra-tts-download-file', JSON.stringify({
-                    url: url,
-                    path: file_path
-                  });
-                } else {
-                  request({
-                      uri: url
-                  }, function (err, res, body) {
-                    if(err) {
-                      console.log("error downloading " + url);
-                      console.log(err);
-                      progress(null, null, "error downloading " + url);
-                    } else {
-                      console.log("got a response");
-                      progress(null, null, "got a response");
-                    }
-                  }).on('data', function (data) {
-                      size = size + data.length;
-                      progress(size, false, null);
-                  }).pipe(fs.createWriteStream(file_path)).on('close', function() {
-                      progress(0, true, null);
-                  });                  
-                }
+                request({
+                    uri: url
+                }, function (err, res, body) {
+                  if(err) {
+                    console.log("error downloading " + url);
+                    console.log(err);
+                    progress(null, null, "error downloading " + url);
+                  } else {
+                    console.log("got a response");
+                    progress(null, null, "got a response");
+                  }
+                }).on('data', function (data) {
+                    size = size + data.length;
+                    progress(size, false, null);
+                }).pipe(fs.createWriteStream(file_path)).on('close', function() {
+                    progress(0, true, null);
+                });                  
             },
             download_file: function(url, expected_size, percent_pre, percent_amount, done) {
-                downloader.download_file_to_location(url, downloader.tmp_file, function(size, complete, error) {
+                downloader.download_file_to_location(url, downloader.tmp_file, function (size, complete, error) {
                   if(error) {
                     console.log(error);
                   } else if(complete) {
@@ -96,25 +87,17 @@
             },
             unzip_file_to_location: function(file_path, dir, progress) {
                 var entries = 0;
-                if(downloader.ipc && ipcRenderer) {
-                  downloader.unzip_file_to_location.callback = progress;
-                  ipcRenderer.send('extra-tts-unzip-file', JSON.stringify({
-                    file: file_path,
-                    dir: dir
-                  });
-                } else {
-                  downloader.assert_directory('./data/' + language_dir, function() {
-                      extract(downloader.tmp_file, {
-                          dir: './data/' + language_dir, onEntry: function () {
-                              entries++;
-                              progress(entries, false, null);
-                          }
-                      }, function (err) {
-                          fs.unlink(downloader.tmp_file);
-                          progress(0, true, null);
-                      });
-                  });
-                }
+                downloader.assert_directory(dir, function() {
+                    extract(downloader.tmp_file, {
+                        dir: dir, onEntry: function () {
+                            entries++;
+                            progress(entries, false, null);
+                        }
+                    }, function (err) {
+                        fs.unlink(downloader.tmp_file);
+                        progress(0, true, null);
+                    });
+                });
             },
             unzip_file: function(language_dir, n_entries, percent_pre, percent_amount, done) {
                 downloader.unzip_file_to_location(downloader.tmp_file, './data/' + language_dir, function(entries, complete, error) {
@@ -138,15 +121,19 @@
                 
                 fs.unlink(downloader.tmp_file, function () {
                     var download_language = function () {
+                        console.log('downloading language...');
                         downloader.download_file(opts.language_url, (5 * 1024 * 1024), 0, 0.10, unzip_language);
                     };
                     var unzip_language = function() {
+                        console.log('unzipping language...');
                         downloader.unzip_file(language_dir, 10, 0.10, 0.05, download_voice);
                     };
                     var download_voice = function() {
+                        console.log('downloading voice...');
                         downloader.download_file(opts.voice_url, (50 * 1024 * 1024), 0.15, 0.65, unzip_voice);
                     };
                     var unzip_voice = function() {
+                        console.log('unzipping voice...');
                         downloader.unzip_file(language_dir, 20, 0.85, 0.15, done);
                     };
                     var done = function() {
