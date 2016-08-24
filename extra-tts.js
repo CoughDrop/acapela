@@ -194,7 +194,7 @@
                 if (opts.pitch) {
                     opts.pitch = Math.min(Math.max(50, opts.pitch * 100), 150);
                 }
-                opts.success = function () { };
+                opts.success = function (res) { };
             }
             var res = acapela[method](opts);
             if (res && res.ready !== false) {
@@ -215,6 +215,16 @@
                 }
             })(keys[idx]);
         }
+        tts.reload = function(opts) {
+          var teardown = tts.exec('teardown');
+          var init = tts.exec('init');
+          if(opts && opts.success) {
+            opts.success({
+              teardown: teardown,
+              setup: setup
+            });
+          }
+        };
         tts.getAvailableVoices = function (opts) {
             opts = opts || {};
             var raw_list = acapela.getAvailableVoices();

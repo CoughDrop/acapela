@@ -46,7 +46,9 @@ namespace acapela {
 
 		success &= BabTTS_Init();
 
-		already_setup = true;
+    if(success) {
+  		already_setup = true;
+  	}
 
 		return success;
 	}
@@ -64,8 +66,7 @@ namespace acapela {
 		bool success;
 
 		success = BabTTS_Uninit();
-		// success &= 
-		BabTtsUninitDll();
+		success &= BabTtsUninitDll();
 
 		babtts = 0;
 		last_voice = 0;
@@ -216,7 +217,6 @@ namespace acapela {
 
 	void jsSetup(const FunctionCallbackInfo<Value>& args) {
 		bool result = setup();
-		Isolate* isolate = args.GetIsolate();
 		args.GetReturnValue().Set(result);
 	}
 
@@ -238,7 +238,6 @@ namespace acapela {
 	}
 
 	void jsSpeakCheck(const FunctionCallbackInfo<Value>& args) {
-		Isolate* isolate = args.GetIsolate();
 		args.GetReturnValue().Set(isSpeaking);
 	}
 
@@ -257,7 +256,6 @@ namespace acapela {
 
 	void jsCloseVoice(const FunctionCallbackInfo<Value>& args) {
 		bool result = closeVoice();
-		Isolate* isolate = args.GetIsolate();
 		args.GetReturnValue().Set(result);
 	}
 

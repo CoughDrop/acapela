@@ -63,7 +63,7 @@
         enabled: false
     };
     
-    var keys = ['init', 'status', 'getAvailableVoices', 'downloadVoice', 'deleteVoice', 'speakText', 'stopSpeakingText'];
+    var keys = ['init', 'status', 'reload', 'getAvailableVoices', 'downloadVoice', 'deleteVoice', 'speakText', 'stopSpeakingText'];
     for (var idx = 0; idx < keys.length; idx++) {
         (function (method) {
             tts[method] = function (a, b, c) {
