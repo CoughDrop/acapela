@@ -30,25 +30,40 @@ namespace acapela {
 	using node::AtExit;
 
 
-	static LPBABTTS babtts;
+	static LPBABTTS babtts = 0;
 
 	static bool already_setup = false;
 	static double downloadPercent = 0;
-	static char * last_voice;
+	static char * last_voice = 0;
+	static bool dll_ready = false;
+	static bool initialized = false;
 
 	bool setup() {
+		printf("Setting Up...\n");
+		if (already_setup) {
+			printf("Already Set Up\n");
+			return true;
+		}
 		bool success;
+		if (!dll_ready) {
+			printf("Initializing DLL\n");
+			success = BabTtsInitDll();
+			dll_ready = true;
+		}
 
-		success = BabTtsInitDll();
-
+		printf("Setting License\n");
 		CTTSBundle bundle(CTTSBundle::BUNDLE_BABTTS);
 		bundle.SetLicense();
 
-		success &= BabTTS_Init();
+		if (!initialized) {
+			printf("Initializing\n");
+			success &= BabTTS_Init();
+			initialized = true;
+		}
 
-    if(success) {
-  		already_setup = true;
-  	}
+		if(success) {
+  			already_setup = true;
+  		}
 
 		return success;
 	}
@@ -63,12 +78,16 @@ namespace acapela {
 
 	bool closeVoice() {
 		printf("BabTTS_Close %s\n", last_voice);
-		BabTTS_Close(babtts);
-		babtts = 0;
-		if (last_voice != 0) {
-			free(last_voice);
+		if (babtts != 0) {
+			printf("Closing babtts\n");
+			BabTTS_Close(babtts);
+			babtts = 0;
 		}
-		last_voice = 0;
+		if (last_voice != 0) {
+			printf("Freeing last_voice %s\n", last_voice);
+			free(last_voice);
+			last_voice = 0;
+		}
 		return true;
 	}
 
@@ -76,9 +95,18 @@ namespace acapela {
 		if (!already_setup) { return true; }
 		bool success;
     
-	    closeVoice();
-		success = BabTTS_Uninit();
-		BabTtsUninitDll();
+		printf("Tearing down \n");
+		closeVoice();
+		if (initialized) {
+			printf("Uninitializing \n");
+			success = BabTTS_Uninit();
+			initialized = false;
+		}
+		if (dll_ready) {
+			printf("Uninitiailizing DLL\n");
+			BabTtsUninitDll();
+			dll_ready = false;
+		}
 
 		babtts = 0;
 		last_voice = 0;
@@ -130,6 +158,7 @@ namespace acapela {
 		if (last_voice != 0 && strcmp(last_voice, voice_string) == 0) {
 			return true;
 		} else if(last_voice != 0) {
+			printf("Closing last voice before opening new one %s %s\n", last_voice, voice_string);
 		  closeVoice();
 		}
 
