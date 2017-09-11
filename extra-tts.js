@@ -58,7 +58,6 @@
                     size = size + data.length;
                     progress(size, false, null);
                 }).pipe(fs.createWriteStream(file_path)).on('close', function () {
-                    console.log("writing to " + file_path)
                     progress(0, true, null);
                 });                  
             },
@@ -90,7 +89,6 @@
             unzip_file_to_location: function(file_path, dir, progress) {
                 var entries = 0;
                 downloader.assert_directory(dir, function () {
-                    console.log("unzipping to ", path.resolve(dir));
                     extract(downloader.tmp_file, {
                         dir: path.resolve(dir), onEntry: function () {
                             entries++;
@@ -221,7 +219,7 @@
                 }
             })(keys[idx]);
         }
-        tts.reload = function(opts) {
+        tts.reload = function (opts) {
           var teardown = tts.exec('teardown');
           var init = tts.exec('init');
           if(opts && opts.success) {
@@ -233,6 +231,7 @@
         };
         tts.getAvailableVoices = function (opts) {
             opts = opts || {};
+            console.log("getting available voices");
             var raw_list = acapela.getAvailableVoices();
             var new_list = [];
             tts.voice_id_map = {};
