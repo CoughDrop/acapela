@@ -1,7 +1,7 @@
 {
   "main": "acapela",
   "name": "acapela",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "acapela tts module for electron",
   "repository": {
     "type": "git",

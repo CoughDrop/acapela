@@ -61,13 +61,24 @@ namespace acapela {
 		args.GetReturnValue().Set(obj);
 	}
 
+	bool closeVoice() {
+		printf("BabTTS_Close %s\n", last_voice);
+		BabTTS_Close(babtts);
+		babtts = 0;
+		if (last_voice != 0) {
+			free(last_voice);
+		}
+		last_voice = 0;
+		return true;
+	}
+
 	bool teardown() {
 		if (!already_setup) { return true; }
 		bool success;
     
-    closeVoice();
+	    closeVoice();
 		success = BabTTS_Uninit();
-		success &= BabTtsUninitDll();
+		BabTtsUninitDll();
 
 		babtts = 0;
 		last_voice = 0;
@@ -131,21 +142,10 @@ namespace acapela {
 			return false;
 		}
 		else { 
-		  last_voice = malloc(strlen(voice_string) + 1);
-		  strcpy(last_voice, s);
+		  last_voice = (char *) malloc(strlen(voice_string) + 1);
+		  strcpy(last_voice, voice_string);
 			return true;
 		}
-	}
-
-	bool closeVoice() {
-		printf("BabTTS_Close %s\n", last_voice);
-		BabTTS_Close(babtts);
-		babtts = 0;
-		if(last_voice != 0) {
-  		free(last_voice);
-  	}
-		last_voice = 0;
-		return true;
 	}
 
 	static bool isSpeaking;
