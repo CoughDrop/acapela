@@ -4,6 +4,7 @@
     var request = require('request');
     var rimraf = require('rimraf');
     var fs = require('fs');
+    var path = require('path');
 
     var tts = {
         exec: function () {
@@ -56,7 +57,8 @@
                 }).on('data', function (data) {
                     size = size + data.length;
                     progress(size, false, null);
-                }).pipe(fs.createWriteStream(file_path)).on('close', function() {
+                }).pipe(fs.createWriteStream(file_path)).on('close', function () {
+                    console.log("writing to " + file_path)
                     progress(0, true, null);
                 });                  
             },
@@ -87,13 +89,17 @@
             },
             unzip_file_to_location: function(file_path, dir, progress) {
                 var entries = 0;
-                downloader.assert_directory(dir, function() {
+                downloader.assert_directory(dir, function () {
+                    console.log("unzipping to ", path.resolve(dir));
                     extract(downloader.tmp_file, {
-                        dir: dir, onEntry: function () {
+                        dir: path.resolve(dir), onEntry: function () {
                             entries++;
                             progress(entries, false, null);
                         }
                     }, function (err) {
+                        if (err) {
+                            console.log("unzip error", err);
+                        }
                         fs.unlink(downloader.tmp_file);
                         progress(0, true, null);
                     });
@@ -149,7 +155,7 @@
             delete_voice: function(opts) {
                 var dir_id = opts.voice_id.replace(/^acap:/, '');
                 var found_dir = null;
-                fs.readdir('./data/' + opts.language_dir, function(list) {
+                fs.readdir('./data/' + opts.language_dir, function(err, list) {
                     for(var idx = 0; idx < list.length; idx++) {
                         var fn = list[idx];
                         var re = new RegExp(dir_id + "[^A-Za-z]", 'i');
@@ -157,18 +163,18 @@
                             found_dir = fn;
                         }
                     }
-                });
-                if(fn) {
-                    rimraf('./data/' + opts.language_dir + '/' + found_dir, function () {
+                    if (found_dir) {
+                        rimraf('./data/' + opts.language_dir + '/' + found_dir, function () {
+                            if (opts.success) {
+                                opts.success();
+                            }
+                        });
+                    } else {
                         if (opts.success) {
-                            opts.success();
+                            opts.success({ message: "no matching directory found" });
                         }
-                    });
-                } else {
-                    if(opts.success) {
-                        opts.success({message: "no matching directory found"});
                     }
-                }
+                });
             },
             watch: function (callback) {
                 downloader.watcher = callback;
