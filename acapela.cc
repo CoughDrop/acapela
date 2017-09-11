@@ -34,7 +34,7 @@ namespace acapela {
 
 	static bool already_setup = false;
 	static double downloadPercent = 0;
-	const char * last_voice;
+	static char * last_voice;
 
 	bool setup() {
 		bool success;
@@ -64,7 +64,8 @@ namespace acapela {
 	bool teardown() {
 		if (!already_setup) { return true; }
 		bool success;
-
+    
+    closeVoice();
 		success = BabTTS_Uninit();
 		success &= BabTtsUninitDll();
 
@@ -117,6 +118,8 @@ namespace acapela {
 
 		if (last_voice != 0 && strcmp(last_voice, voice_string) == 0) {
 			return true;
+		} else if(last_voice != 0) {
+		  closeVoice();
 		}
 
 		printf("BabTTS_Create %s, %s\n", last_voice, voice_string);
@@ -128,14 +131,19 @@ namespace acapela {
 			return false;
 		}
 		else { 
-			last_voice = voice_string;
+		  last_voice = malloc(strlen(voice_string) + 1);
+		  strcpy(last_voice, s);
 			return true;
 		}
 	}
 
 	bool closeVoice() {
+		printf("BabTTS_Close %s\n", last_voice);
 		BabTTS_Close(babtts);
 		babtts = 0;
+		if(last_voice != 0) {
+  		free(last_voice);
+  	}
 		last_voice = 0;
 		return true;
 	}
