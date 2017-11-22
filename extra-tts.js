@@ -89,8 +89,10 @@
             unzip_file_to_location: function(file_path, dir, progress) {
                 var entries = 0;
                 downloader.assert_directory(dir, function () {
+                    var full_path = path.resolve(dir);
+                    console.log("unzipping to " + full_path);
                     extract(downloader.tmp_file, {
-                        dir: path.resolve(dir), onEntry: function () {
+                        dir: full_path, onEntry: function () {
                             entries++;
                             progress(entries, false, null);
                         }
