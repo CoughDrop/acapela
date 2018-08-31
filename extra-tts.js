@@ -1,5 +1,12 @@
 (function () {
-    var acapela = require('acapela');
+    var acapela = null;
+    try {
+        if (process.arch == 'ia32') {
+            acapela = require('acapela/acapela.32');
+        } else {
+            acapela = require('acapela/acapela.64');
+        }
+    } catch (e) { }
     var extract = require('extract-zip');
     var request = require('request');
     var rimraf = require('rimraf');
