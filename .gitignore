@@ -4,3 +4,4 @@ AcaTTS.dll
 AcaTTS.64.dll
 AcaTTS.ini
 build/
+node_modules/**
