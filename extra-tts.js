@@ -1,6 +1,5 @@
 (function () {
     var acapela = null;
-    var latest_version = 10.0;
     try {
         if (process.arch == 'ia32') {
             acapela = require('acapela/acapela.32');
@@ -164,7 +163,7 @@
                     var check_for_binaries = function(data) {
                         // if binaries are defined and match, continue,
                         // otherwise download and unzip them
-                        if(data && data.version == latest_version) {
+                        if(data && opts.acapela_version && data.version == opts.acapela_version) {
                             console.log("binaries already in place");
                             download_language();
                         } else {
