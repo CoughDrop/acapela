@@ -47,6 +47,7 @@
               delete a['error'];
               delete a['progress'];
             }
+            a.base_dir = tts.base_dir;
             ipcRenderer.send('extra-tts-exec', JSON.stringify({
               method: method,
               success_id: success_id,
@@ -57,7 +58,7 @@
           } else {
             console.log("extra-tts will run in the current process");
             extra_tts = extra_tts || require('extra-tts');
-            extra_tts[method].appl(extra_tts, rags)
+            extra_tts[method].apply(extra_tts, args)
           }
         },
         enabled: false

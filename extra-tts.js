@@ -1,5 +1,6 @@
 (function () {
     var acapela = null;
+    var latest_version = 10.0;
     try {
         if (process.arch == 'ia32') {
             acapela = require('acapela/acapela.32');
@@ -113,7 +114,7 @@
                 });
             },
             unzip_file: function(language_dir, n_entries, percent_pre, percent_amount, done) {
-                downloader.unzip_file_to_location(downloader.tmp_file, './data/' + language_dir, function(entries, complete, error) {
+                downloader.unzip_file_to_location(downloader.tmp_file, language_dir, function(entries, complete, error) {
                   if(error) {
                     console.log(error);
                   } else if(complete) {
@@ -128,11 +129,56 @@
             },
             download_voice: function (opts) {
                 var dir_id = opts.voice_id.replace(/^acap:/, '');
-                var language_dir = opts.language_dir;
-                downloader.tmp_file = 'tmp_download' + Math.round(Math.random() * 99999) + '.zip';
+                var base_dir = opts.base_dir || './data';
+                var bin_dir = path.resolve(base_dir, 'bin');
+                var data_dir = path.resolve(base_dir, 'data');
+                var language_dir = path.resolve(base_dir, 'data', opts.language_dir);
+                downloader.tmp_file = path.resolve(base_dir, 'tmp_download' + Math.round(Math.random() * 99999) + '.zip');
                 downloader.watcher = downloader.watcher || function() { };
                 
                 fs.unlink(downloader.tmp_file, function () {
+                    var assert_data_directory = function() {
+                        console.log("asserting data directory");
+                        downloader.assert_directory(data_dir, assert_bin_directory);
+                    };
+                    var assert_bin_directory = function() {
+                        console.log("asserting bin directory");
+                        downloader.assert_directory(bin_dir, function() {
+                            console.log("checking for existing bin files");
+                            fs.readdir(bin_dir, function(err, list) {
+                                if(list.indexOf('Selector2.conf') !== -1) {
+                                    fs.readFile(path.resolve(bin_dir, 'Selector2.conf'), 'utf-8', function(err, data) {
+                                        // check version number
+                                        console.log(data);
+                                        var version = data.match(/Version=([\d_]+)/)[1];
+                                        version = parseFloat(version.split(/_/).slice(0, 1).join('.'));
+                                        check_for_binaries({version: version});
+                                    });
+                                } else {
+                                    console.log("no bin version data found");
+                                    check_for_binaries();
+                                }
+                            })
+                        })
+                    }
+                    var check_for_binaries = function(data) {
+                        // if binaries are defined and match, continue,
+                        // otherwise download and unzip them
+                        if(data && data.version == latest_version) {
+                            console.log("binaries already in place");
+                            download_language();
+                        } else {
+                            var download_binaries = function() {
+                                console.log("downloading binaries...");
+                                downloader.download_file(opts.binary_url, 0, 0, unzip_binaries);
+                            };
+                            var unzip_binaries = function() {
+                                console.log("unzipping binaries...");
+                                download_bin.unzip_file(bin_dir, 0, 0, download_language);
+                            };
+                            download_binaries();
+                        }
+                    };
                     var download_language = function () {
                         console.log('downloading language...');
                         downloader.download_file(opts.language_url, (5 * 1024 * 1024), 0, 0.10, unzip_language);
@@ -155,14 +201,14 @@
                             done: true
                         });
                     };
-
-                    download_language();
+                    assert_data_directory();
                 });
             },
             delete_voice: function(opts) {
                 var dir_id = opts.voice_id.replace(/^acap:/, '');
                 var found_dir = null;
-                fs.readdir('./data/' + opts.language_dir, function(err, list) {
+                var language_dir = path.resolve(opts.base_dir || './data', opts.language_dir);
+                fs.readdir(language_dir, function(err, list) {
                     for(var idx = 0; idx < list.length; idx++) {
                         var fn = list[idx];
                         var re = new RegExp(dir_id + "[^A-Za-z]", 'i');
@@ -171,7 +217,7 @@
                         }
                     }
                     if (found_dir) {
-                        rimraf('./data/' + opts.language_dir + '/' + found_dir, function () {
+                        rimraf(language_dir + '/' + found_dir, function () {
                             if (opts.success) {
                                 opts.success();
                             }
@@ -255,11 +301,11 @@
                 opts.success(new_list);
             }
         };
-        tts.downloadVoice = function (opts) {
+        tts.downloadVoice = function(opts) {
             downloader.watch(opts.progress || opts.success);
             downloader.download_voice(opts || {});
         };
-        tts.deleteVoice = function (opts) {
+        tts.deleteVoice = function(opts) {
             downloader.delete_voice(opts || {});
         };
         tts.download_file = function(url, file_path, progress) {
