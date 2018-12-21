@@ -85,8 +85,8 @@ typedef void*	LPBABTTS;
 #define BABTTS_FILE_AU					0x00020000		
 #define BABTTS_FILE_VOX					0x00040000
 #define BABTTS_FILE_AIFF				0x00080000
-#define BABTTS_FILE_EXTAUDIOFILEOBJ 0x00100000
-
+#define BABTTS_FILE_EXTAUDIOFILEOBJ		0x00100000
+#define BABTTS_FILE_CALLBACK			0x00200000
 
 #define	BABTTS_READ_DEFAULT				0x00000000 
 #define	BABTTS_READ_TEXT				0x00400000
@@ -332,10 +332,11 @@ typedef enum
 	BABTTS_PARAM_CUTOFF_FREQUENCY=32,
 	BABTTS_PARAM_HFNOISE=33,
 	BABTTS_PARAM_PRESETFILTERS=34,
-	BABTTS_PARAM_LIMITERGAIN=35,
-	BABTTS_PARAM_LIMITERTHRESHOLD=36,
+	BABTTS_PARAM_AUDIOBOOST_GAIN=35,
+	BABTTS_PARAM_AUDIOBOOST_THRESHOLD=36,
+	BABTTS_PARAM_AUDIOBOOST_PREEMPH=37,
 	
-	BABTTS_PARAM_LASTPARAM = BABTTS_PARAM_LIMITERTHRESHOLD
+	BABTTS_PARAM_LASTPARAM = BABTTS_PARAM_AUDIOBOOST_PREEMPH
 }BabTtsParam;
 
 
@@ -355,7 +356,7 @@ typedef enum
 #define BABTTS_MSG_SENTENCE			(0x2005)
 #define BABTTS_MSG_PHONE			(0x2006)
 #define BABTTS_MSG_USERMRK			(0x2007)
-
+#define BABTTS_MSG_SAMPLES			(0x200e)
 #define BABTTS_MSG_ERROR			(0x200b)
 
 
@@ -398,7 +399,9 @@ typedef enum
 	// 32 kHz (reserved)
 	BABTTS_SAMP_32KHZ=32,
 	// 44 kHz (reserved)
-	BABTTS_SAMP_44KHZ=44,
+	BABTTS_SAMP_44KHZ = 44,
+	// 48 kHz (reserved)
+	BABTTS_SAMP_48KHZ = 48,
 	// unknown
 	BABTTS_SAMP_UNKNOWN=0xFFFFFFFF
 }BabTtsSamplingRate;
@@ -517,7 +520,8 @@ typedef enum
 	//LIC_TYPE_BUNDLINGFULL=4,//no limit
 	LIC_TYPE_SERVER=5,
 	LIC_TYPE_USB=6,
-	LIC_TYPE_PLI=7
+	LIC_TYPE_PLI=7,
+	LIC_TYPE_USER=8
 }LicType;
 
 typedef enum
@@ -525,6 +529,7 @@ typedef enum
 	LIC_RIGHT_NOLIC=1,
 	LIC_RIGHT_COM=2,
 	LIC_RIGHT_EVAL=4,
+	LIC_RIGHT_TIME = 8,
 	LIC_RIGHT_UNAVAILABLE=64
 }LicRight;
 
@@ -568,6 +573,13 @@ typedef struct
 	DWORD	dwTimeStamp;
 	DWORD	dwDuration;
 } BABTTSUNITINFO;
+/* Stucture sent for sentence/word events */
+typedef struct
+{
+	DWORD	dwTimeStamp;//position in byte of the buffer in the stream
+	DWORD	dwByteSize;//size of the buffer in bytes
+	void*	pBuffer;//buffer
+} BABTTSSAMPLESINFO;
 
 
 /* Prototype of the call-back function.
