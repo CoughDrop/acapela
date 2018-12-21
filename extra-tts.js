@@ -84,8 +84,8 @@
             },
             assert_directory: function(dir, done) {
                 fs.stat(dir, function(err, stats) {
-                    if(err && err.errno === 34) {
-                        fs.mkdir(dir, function() {
+                    if(err && err.code == 'ENOENT') {
+                        fs.mkdir(dir, {recursive: true}, function() {
                             done();
                         });                  
                     } else {
@@ -136,6 +136,10 @@
                 downloader.watcher = downloader.watcher || function() { };
                 
                 fs.unlink(downloader.tmp_file, function () {
+                    var assert_base_dir = function() {
+                        console.log("asserting base directory");
+                        downloader.assert_directory(base_dir, assert_data_directory);
+                    };
                     var assert_data_directory = function() {
                         console.log("asserting data directory");
                         downloader.assert_directory(data_dir, assert_bin_directory);
@@ -200,7 +204,7 @@
                             done: true
                         });
                     };
-                    assert_data_directory();
+                    assert_base_dir();
                 });
             },
             delete_voice: function(opts) {
