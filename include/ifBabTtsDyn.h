@@ -11,7 +11,7 @@
 /*
  * Here are the steps you need to follow to use this file to dynamically 
  * import AcaTts.dll/AcaTts.64.dll (Windows), libacatts.dylib (Mac OS X - 
- * Universal Binary) or libacatts.so/libacatts.64.so (Linux):
+ * Universal Binary) or AcaTTS.so/AcaTTS.64.so (Linux):
  * 
  * 1. Make sure that C-compatible header files ioBabTts.h and ifBabTtsDyn.h 
  *    are in the header file search path of your project.
@@ -37,7 +37,7 @@
  *    done in two different ways, by calling 
  *    
  *    - either BabTtsInitDll() if AcaTts.dll/AcaTts.64.dll, libacatts.dylib or 
- *      libacatts.so/libacatts.64.so lies in the current working directory (or 
+ *      AcaTTS.so/AcaTTS.64.so lies in the current working directory (or 
  *      is available through the system dynamic library loader search path)
  *    
  *    - or BabTtsInitDllEx(LPCTSTR lpszLib) if lpszLib is either the 
@@ -84,6 +84,7 @@
 				sizeof(_IFBABTTSDYN_loadErrorStr[0u]) \
 			), fmt, __VA_ARGS__ \
 		)
+	#define _CRT_SECURE_NO_WARNINGS
 #else
 	#define _IFBABTTSDYN_T(str) str
 	#define _IFBABTTSDYN_setLoadErrorStr(str) \
@@ -342,6 +343,10 @@
 	_IFBABTTSDYN_API_FUNC( \
 		BabTTS_PhoGetViseme, BabTtsError, \
 		(LPBABTTS lpObject, DWORD_PTR dwPhoneme, DWORD *lpdwViseme) \
+	) \
+	_IFBABTTSDYN_API_FUNC( \
+		BabTTS_PhoGetTimeStamp, BabTtsError, \
+		(LPBABTTS lpObject, DWORD_PTR dwPhoneme, DWORD *lpdwTimeStamp) \
 	) \
 	_IFBABTTSDYN_API_FUNC( \
 		BabTTS_GetErrorNameImpl, const char *, \

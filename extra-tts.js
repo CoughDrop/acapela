@@ -50,23 +50,28 @@
         var downloader = {
             download_file_to_location(url, file_path, progress) {
                 var size = 0;
-                request({
-                    uri: url
-                }, function (err, res, body) {
-                  if(err) {
+                var last_mb = 0;
+                var stream = fs.createWriteStream(file_path);
+                request.get(url).on('error', function(err) {
                     console.log("error downloading " + url);
                     console.log(err);
                     progress(null, null, "error downloading " + url);
-                  } else {
+                }).on('close', function() {
+                    console.log('download complete');
+                    setTimeout(function() {
+                        progress(0, true, null);
+                    }, 500);
+                }).on('response', function(res) {
                     console.log("got a response");
                     progress(null, null, "got a response");
-                  }
                 }).on('data', function (data) {
                     size = size + data.length;
+                    if(last_mb != Math.round(size / 1024 / 1024)) {
+                        last_mb = Math.round(size / 1024 / 1024);
+                        console.log("data segment", size / 1024 / 1024);
+                    }
                     progress(size, false, null);
-                }).pipe(fs.createWriteStream(file_path)).on('close', function () {
-                    progress(0, true, null);
-                });                  
+                }).pipe(stream);     
             },
             download_file: function(url, expected_size, percent_pre, percent_amount, done) {
                 downloader.download_file_to_location(url, downloader.tmp_file, function (size, complete, error) {
@@ -107,8 +112,9 @@
                         if (err) {
                             console.log("unzip error", err);
                         }
-                        fs.unlink(downloader.tmp_file);
+                        fs.unlink(downloader.tmp_file, function() { 
                         progress(0, true, null);
+                        });
                     });
                 });
             },
@@ -191,7 +197,7 @@
                         downloader.unzip_file(language_dir, 10, 0.10, 0.05, download_voice);
                     };
                     var download_voice = function() {
-                        console.log('downloading voice...');
+                        console.log('downloading voice...', opts.voice_url);
                         downloader.download_file(opts.voice_url, (50 * 1024 * 1024), 0.15, 0.65, unzip_voice);
                     };
                     var unzip_voice = function() {
