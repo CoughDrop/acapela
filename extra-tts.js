@@ -212,6 +212,7 @@
                 var found_dir = null;
                 var language_dir = path.resolve(opts.base_dir || './data', opts.language_dir);
                 fs.readdir(language_dir, function(err, list) {
+                    list = list || [];
                     for(var idx = 0; idx < list.length; idx++) {
                         var fn = list[idx];
                         var re = new RegExp(dir_id + "[^A-Za-z]", 'i');
@@ -226,6 +227,15 @@
                             }
                         });
                     } else {
+                        // check in the legacy location before giving up
+                        if(!opts.last_try) {
+                            return downloader.delete_voice({
+                                voice_id: opts.voice_id,
+                                language_dir: opts.language_dir,
+                                success: opts.success,
+                                last_try: true
+                            })
+                        }
                         if (opts.success) {
                             opts.success({ message: "no matching directory found" });
                         }
