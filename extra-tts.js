@@ -179,26 +179,26 @@
                         } else {
                             var download_binaries = function() {
                                 console.log("downloading binaries...");
-                                downloader.download_file(opts.binary_url, 0, 0, unzip_binaries);
+                                downloader.download_file(opts.binary_url, (5 * 1024 * 1024), 0, 0.05, unzip_binaries);
                             };
                             var unzip_binaries = function() {
                                 console.log("unzipping binaries...");
-                                download_bin.unzip_file(bin_dir, 0, 0, download_language);
+                                downloader.unzip_file(bin_dir, 5, 0.05, 0.05, download_language);
                             };
                             download_binaries();
                         }
                     };
                     var download_language = function () {
                         console.log('downloading language...');
-                        downloader.download_file(opts.language_url, (5 * 1024 * 1024), 0, 0.10, unzip_language);
+                        downloader.download_file(opts.language_url, (5 * 1024 * 1024), 0.10, 0.10, unzip_language);
                     };
                     var unzip_language = function() {
                         console.log('unzipping language...');
-                        downloader.unzip_file(language_dir, 10, 0.10, 0.05, download_voice);
+                        downloader.unzip_file(language_dir, 10, 0.20, 0.05, download_voice);
                     };
                     var download_voice = function() {
                         console.log('downloading voice...', opts.voice_url);
-                        downloader.download_file(opts.voice_url, (50 * 1024 * 1024), 0.15, 0.65, unzip_voice);
+                        downloader.download_file(opts.voice_url, ((opts.voice_size || 150) * 1024 * 1024), 0.25, 0.60, unzip_voice);
                     };
                     var unzip_voice = function() {
                         console.log('unzipping voice...');
