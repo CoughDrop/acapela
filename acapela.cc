@@ -14,13 +14,14 @@
 namespace acapela {
 
 	using v8::Local;
+	using v8::Context;
 	using v8::Persistent;
-	using v8::Handle;
 	using v8::Isolate;
 	using v8::FunctionCallbackInfo;
 	using v8::Object;
 	using v8::HandleScope;
 	using v8::String;
+	using v8::NewStringType;
 	using v8::Boolean;
 	using v8::Array;
 	using v8::Number;
@@ -70,9 +71,10 @@ namespace acapela {
 
 	void jsStatus(const FunctionCallbackInfo<Value>& args) {
 		Isolate* isolate = args.GetIsolate();
+		Local<Context> context = isolate->GetCurrentContext();
 		bool ready = setup();
 		Local<Object> obj = Object::New(isolate);
-		obj->Set(String::NewFromUtf8(isolate, "ready"), Boolean::New(isolate, ready));
+		obj->Set(context, String::NewFromUtf8(isolate, "ready", NewStringType::kNormal).ToLocalChecked(), Boolean::New(isolate, ready));
 		args.GetReturnValue().Set(obj);
 	}
 
@@ -114,13 +116,14 @@ namespace acapela {
 		return success;
 	}
 
-	Handle<Array> listVoices(Isolate* isolate) {
+	Local<Array> listVoices(Isolate* isolate) {
 		teardown();
 		setup();
+		Local<Context> context = isolate->GetCurrentContext();
 		BabTtsError babError = E_BABTTS_NOERROR;
 		BABTTSINFO voiceInfo; 
 		long tempnumber = BabTTS_GetNumVoices(); 
-		Handle<Array> result = Array::New(isolate, tempnumber);
+		Local<Array> result = Array::New(isolate, tempnumber);
 		printf("Number of voice: %d\n", tempnumber); 
 		for (int j = 0; j<tempnumber; j++) { 
 			char szVoice[50]; 
@@ -137,13 +140,13 @@ namespace acapela {
 				}
 				else {
 					Local<Object> obj = Object::New(isolate);
-					obj->Set(String::NewFromUtf8(isolate, "voice_id"), String::NewFromUtf8(isolate, voiceInfo.szName));
-					obj->Set(String::NewFromUtf8(isolate, "name"), String::NewFromUtf8(isolate, voiceInfo.szSpeaker));
-					obj->Set(String::NewFromUtf8(isolate, "locale"), String::NewFromUtf8(isolate, "en-US"));
-					obj->Set(String::NewFromUtf8(isolate, "language"), String::NewFromUtf8(isolate, voiceInfo.szLanguage));
-					obj->Set(String::NewFromUtf8(isolate, "active"), Boolean::New(isolate, true));
+					obj->Set(context, String::NewFromUtf8(isolate, "voice_id", NewStringType::kNormal).ToLocalChecked(), String::NewFromUtf8(isolate, voiceInfo.szName, NewStringType::kNormal).ToLocalChecked());
+					obj->Set(context, String::NewFromUtf8(isolate, "name", NewStringType::kNormal).ToLocalChecked(), String::NewFromUtf8(isolate, voiceInfo.szSpeaker, NewStringType::kNormal).ToLocalChecked());
+					obj->Set(context, String::NewFromUtf8(isolate, "locale", NewStringType::kNormal).ToLocalChecked(), String::NewFromUtf8(isolate, "en-US", NewStringType::kNormal).ToLocalChecked());
+					obj->Set(context, String::NewFromUtf8(isolate, "language", NewStringType::kNormal).ToLocalChecked(), String::NewFromUtf8(isolate, voiceInfo.szLanguage, NewStringType::kNormal).ToLocalChecked());
+					obj->Set(context, String::NewFromUtf8(isolate, "active", NewStringType::kNormal).ToLocalChecked(), Boolean::New(isolate, true));
 
-					result->Set(j, obj); // String::Utf8Value("asdf"));
+					result->Set(context, j, obj); // String::Utf8Value("asdf"));
 					printf("Voice: %s Speaker: %s Language: %s Version: %s\n", voiceInfo.szName, voiceInfo.szSpeaker, voiceInfo.szLanguage, voiceInfo.szVersion);
 				}
 			}
@@ -192,13 +195,15 @@ namespace acapela {
 	}
 
 	bool speakText(Isolate * isolate, Local<Object> opts) {
+		Local<Context> context = isolate->GetCurrentContext();
 		isSpeaking = true;
 		BabTtsError error;
-		String::Utf8Value string8(Local<String>::Cast(opts->Get(String::NewFromUtf8(isolate, "text"))));
+		// String::Utf8Value string8(Local<String>::Cast(opts->Get(context, String::NewFromUtf8(isolate, "text", NewStringType::kNormal).ToLocalChecked())));
+		String::Utf8Value string8(opts->Get(context, String::NewFromUtf8(isolate, "text", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->ToString());
 		const char * lpszMyText = *string8;
-		double speed = opts->Get(String::NewFromUtf8(isolate, "rate"))->NumberValue();
-		double volume = opts->Get(String::NewFromUtf8(isolate, "volume"))->NumberValue();
-		double pitch = opts->Get(String::NewFromUtf8(isolate, "pitch"))->NumberValue();
+		double speed = opts->Get(context, String::NewFromUtf8(isolate, "rate", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue();
+		double volume = opts->Get(context, String::NewFromUtf8(isolate, "volume", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue();
+		double pitch = opts->Get(context, String::NewFromUtf8(isolate, "pitch", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked()->NumberValue();
 		printf("values: %G %G %G\n", speed, volume, pitch);
 		if (!speed || speed == 0 || isnan(speed)) {
 			speed = 100;
@@ -227,7 +232,7 @@ namespace acapela {
 			printf("Error while setting speech volume: %d\n", error);
 			return false;
 		}
-		Local<Function> func = Local<Function>::Cast(opts->Get(String::NewFromUtf8(isolate, "success")));
+		Local<Function> func = Local<Function>::Cast(opts->Get(context, String::NewFromUtf8(isolate, "success", NewStringType::kNormal).ToLocalChecked()).ToLocalChecked());
 		int mode = BABTTS_ASYNC;
 		// if (sync) { mode = BABTTS_SYNC; }
 		error = BabTTS_SetCallback(babtts, BabTTSProc, BABTTS_CB_FUNCTION);
@@ -280,7 +285,7 @@ namespace acapela {
 
 	void jsListVoices(const FunctionCallbackInfo<Value>& args) {
 		Isolate* isolate = args.GetIsolate();
-		Handle<Array> result = listVoices(isolate);
+		Local<Array> result = listVoices(isolate);
 		args.GetReturnValue().Set(result);
 	}
 

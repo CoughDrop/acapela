@@ -14,7 +14,7 @@
   "dependencies": {
     "extract-zip": "latest",
     "request": "latest",
-    "rimraf": "latest"
+    "rimraf": "^3.0.0"
   },
   "readme": "README.md"
 }
