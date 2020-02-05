@@ -299,7 +299,7 @@
           if(opts && opts.success) {
             opts.success({
               teardown: teardown,
-              setup: setup
+              setup: init
             });
           }
         };
